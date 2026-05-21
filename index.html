@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Minimalist Click Counter</title>
+  <meta name="description" content="A gorgeous, premium, highly responsive minimalist click counter. Tap anywhere, view logs, and never lose your progress.">
+  <!-- Google Fonts: Outfit and Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@200;300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Root App Container -->
+  <div class="app-container" id="app-container">
+    
+    <!-- Top Header Navigation -->
+    <header class="app-header">
+      <!-- Left side: Reset -->
+      <button id="btn-reset" class="glass-btn" aria-label="Reset current count">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3-3 3 3m-3-3v12" />
+        </svg>
+        <span>Reset</span>
+      </button>
+
+      <!-- Right side: History Toggle -->
+      <button id="btn-history" class="glass-btn" aria-label="Toggle history log">
+        <span>History</span>
+        <span id="history-badge" class="badge">0</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </button>
+    </header>
+
+    <!-- Main Central Counter Area -->
+    <main class="counter-main">
+      <div class="counter-wrapper">
+        <div id="counter-value" class="counter-value">0</div>
+        <div class="counter-label">TAP ANYWHERE TO COUNT</div>
+      </div>
+    </main>
+
+    <!-- Bottom Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Sliding History Drawer Overlay -->
+    <div id="drawer-overlay" class="drawer-overlay"></div>
+    <aside id="history-drawer" class="history-drawer" aria-label="History Drawer">
+      <div class="drawer-header">
+        <div class="drawer-title-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <h2>History Log</h2>
+        </div>
+        <button id="btn-close-drawer" class="close-btn" aria-label="Close drawer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="drawer-content">
+        <div id="no-history-msg" class="no-history-msg">
+          <div class="no-history-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <p>No history found</p>
+          <span>Sessions will be logged when you click reset.</span>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+      </div>
+
+      <div class="drawer-footer">
+        <button id="btn-clear-history" class="clear-btn danger-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <span>Clear All History</span>
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

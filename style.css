@@ -1,0 +1,512 @@
+/* ==========================================================================
+   Premium Dark Minimalist Counter Stylesheet
+   ========================================================================== */
+
+/* Design Tokens & Custom Variables */
+:root {
+  --bg-dark: #050508;
+  --bg-card: #0c0c12;
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-hover: rgba(255, 255, 255, 0.18);
+  
+  --text-white: #ffffff;
+  --text-silver: #a0a0a5;
+  --text-muted: #606067;
+  
+  --shadow-glow: 0 0 40px rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 20px 50px rgba(0, 0, 0, 0.5);
+  
+  --font-display: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-elastic: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Global Reset & Prevent Selections */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  
+  /* CRITICAL: Absolutely disable any form of touch callout, text selection, 
+     magnifying glasses, or user highlighting on long-press */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* Remove native mobile tap highlight */
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-white);
+  font-family: var(--font-body);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Elegant Grid / Ambient Light Background */
+.app-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: radial-gradient(circle at 50% 50%, #101018 0%, var(--bg-dark) 80%);
+  z-index: 1;
+}
+
+/* App Header styling (Reset and History) */
+.app-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+/* Premium Glassmorphic Buttons */
+.glass-btn {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-white);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  transition: var(--transition-smooth);
+}
+
+.glass-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-glass-hover);
+  transform: translateY(-2px);
+}
+
+.glass-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* History Badge count */
+.badge {
+  background: var(--text-white);
+  color: var(--bg-dark);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 2px 7px;
+  border-radius: 20px;
+  min-width: 18px;
+  text-align: center;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+/* Main Display Center Counter Area */
+.counter-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  cursor: pointer; /* Whole area is clickable */
+}
+
+.counter-wrapper {
+  text-align: center;
+  pointer-events: none; /* Let pointer events pass through to body/main container */
+}
+
+/* Glowing Centered Value Styling */
+.counter-value {
+  font-family: var(--font-display);
+  font-weight: 200;
+  font-size: clamp(8rem, 28vw, 16rem);
+  line-height: 1;
+  color: var(--text-white);
+  letter-spacing: -0.05em;
+  margin-bottom: 12px;
+  text-shadow: var(--shadow-glow);
+  transition: var(--transition-elastic);
+  will-change: transform;
+}
+
+/* Soft Spring Text Pop Animation when incremented */
+.counter-value.pop {
+  transform: scale(1.08);
+}
+
+.counter-label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  color: var(--text-silver);
+  opacity: 0.5;
+  transition: var(--transition-smooth);
+}
+
+/* Touch coordinates ripple effect */
+.touch-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  animation: ripple-expansion 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  z-index: 1;
+}
+
+@keyframes ripple-expansion {
+  to {
+    transform: translate(-50%, -50%) scale(8);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Sliding Drawer Panel Styles
+   ========================================================================== */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: var(--transition-smooth);
+  z-index: 99;
+}
+
+.drawer-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.history-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 440px;
+  height: 100vh;
+  background: rgba(10, 10, 15, 0.7);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-left: 1px solid var(--border-glass);
+  z-index: 100;
+  transform: translateX(100%);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.history-drawer.active {
+  transform: translateX(0);
+}
+
+/* Drawer Header design */
+.drawer-header {
+  padding: 32px 24px;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.drawer-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-white);
+}
+
+.drawer-title-wrapper h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-silver);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.close-btn:hover {
+  color: var(--text-white);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Drawer Content list styling */
+.drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Custom Scrollbar for Drawer List */
+.drawer-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.drawer-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.drawer-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.drawer-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* History List elements */
+.history-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition-smooth);
+  animation: slide-in-item 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slide-in-item {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.history-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-item-count {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-white);
+  line-height: 1.1;
+}
+
+.history-item-time {
+  font-size: 0.75rem;
+  color: var(--text-silver);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.delete-item-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.delete-item-btn:hover {
+  color: #ff4d4d;
+  background: rgba(255, 77, 77, 0.1);
+}
+
+/* Empty History state */
+.no-history-msg {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+}
+
+.no-history-icon {
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.08);
+}
+
+.no-history-msg p {
+  color: var(--text-silver);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+
+.no-history-msg span {
+  font-size: 0.8rem;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+/* Drawer Footer */
+.drawer-footer {
+  padding: 24px;
+  border-top: 1px solid var(--border-glass);
+}
+
+.clear-btn {
+  width: 100%;
+  background: rgba(255, 77, 77, 0.03);
+  border: 1px solid rgba(255, 77, 77, 0.15);
+  color: #ff6666;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition-smooth);
+}
+
+.clear-btn:hover {
+  background: rgba(255, 77, 77, 0.08);
+  border-color: rgba(255, 77, 77, 0.3);
+  color: #ff4d4d;
+}
+
+.clear-btn:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
+   Toast Notifications
+   ========================================================================== */
+.toast-container {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 101;
+  pointer-events: none;
+}
+
+.toast {
+  background: rgba(15, 15, 25, 0.8);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-white);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slide-toast 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+}
+
+@keyframes slide-toast {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast.fade-out {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: var(--transition-smooth);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 16px;
+  }
+  
+  .glass-btn {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+  }
+  
+  .history-drawer {
+    max-width: 100%;
+    border-left: none;
+  }
+}
