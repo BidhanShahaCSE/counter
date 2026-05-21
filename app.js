@@ -103,8 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
       void counterValue.offsetWidth; // Force DOM reflow to restart CSS animation
       counterValue.classList.add('pop');
 
-      // Create premium ripple animation at pointer location
-      createRipple(e.clientX, e.clientY);
+
     });
 
     // B. Reset and Archive Session
@@ -149,28 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: false });
   }
 
-  // --- Ripple Effect Generator ---
 
-  function createRipple(x, y) {
-    const ripple = document.createElement('div');
-    ripple.classList.add('touch-ripple');
-    
-    // Position the ripple relative to viewport
-    ripple.style.left = `${x}px`;
-    ripple.style.top = `${y}px`;
-
-    // Dynamic sizing based on screen scale
-    const size = Math.max(window.innerWidth, window.innerHeight) * 0.15;
-    ripple.style.width = `${size}px`;
-    ripple.style.height = `${size}px`;
-
-    appContainer.appendChild(ripple);
-
-    // Remove element after CSS transition completes
-    ripple.addEventListener('animationend', () => {
-      ripple.remove();
-    });
-  }
 
   // --- Session Archive (Reset Logic) ---
 
