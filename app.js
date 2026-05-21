@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const counterValue = document.getElementById('counter-value');
   const btnReset = document.getElementById('btn-reset');
   const btnHistory = document.getElementById('btn-history');
+  const btnPip = document.getElementById('btn-pip');
   const historyBadge = document.getElementById('history-badge');
   const historyDrawer = document.getElementById('history-drawer');
   const drawerOverlay = document.getElementById('drawer-overlay');
@@ -53,7 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(`Resumed session at ${count}`);
     }
 
-    // 5. Register Event Listeners
+    // 5. Hide PiP button if not supported in the browser
+    if (!('documentPictureInPicture' in window)) {
+      btnPip.style.display = 'none';
+    }
+
+    // 6. Register Event Listeners
     registerEventListeners();
   }
 
@@ -85,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Ignore click if it targets interactive UI panels or buttons
       const isInteractive = e.target.closest('#btn-reset') ||
                             e.target.closest('#btn-history') ||
+                            e.target.closest('#btn-pip') ||
                             e.target.closest('#history-drawer') ||
                             e.target.closest('.toast-container') ||
                             e.target.closest('#drawer-overlay') ||
@@ -132,6 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClearHistory.addEventListener('click', (e) => {
       e.stopPropagation();
       clearAllHistory();
+    });
+
+    // E. PiP Mode Action
+    btnPip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePiP();
     });
 
     // E. STRICTLY Prevent Context Menu (and long-press select/zoom behaviors)
@@ -306,5 +319,66 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       toast.remove();
     }, 2500);
+  }
+
+  // --- Document Picture-in-Picture logic ---
+
+  async function togglePiP() {
+    try {
+      // Check if there is already an active PiP window
+      if (window.documentPictureInPicture && window.documentPictureInPicture.window) {
+        window.documentPictureInPicture.window.close();
+        return;
+      }
+
+      // Open PiP window
+      const pipWindow = await window.documentPictureInPicture.requestWindow({
+        width: 380,
+        height: 600,
+      });
+
+      // Copy stylesheets
+      const allStylesheets = Array.from(document.styleSheets);
+      allStylesheets.forEach((stylesheet) => {
+        try {
+          const cssRules = Array.from(stylesheet.cssRules)
+            .map((rule) => rule.cssText)
+            .join('');
+          const style = document.createElement('style');
+          style.textContent = cssRules;
+          pipWindow.document.head.appendChild(style);
+        } catch (e) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = stylesheet.href;
+          pipWindow.document.head.appendChild(link);
+        }
+      });
+
+      // Copy Google Fonts preconnect tags
+      Array.from(document.querySelectorAll('link[rel="preconnect"]')).forEach((link) => {
+        pipWindow.document.head.appendChild(link.cloneNode(true));
+      });
+
+      // Move the app container to PiP
+      pipWindow.document.body.appendChild(appContainer);
+
+      // Hide PiP button inside the PiP window to prevent nested PiP calls
+      const pipButtonInPiP = pipWindow.document.getElementById('btn-pip');
+      if (pipButtonInPiP) {
+        pipButtonInPiP.style.display = 'none';
+      }
+
+      // Restore when PiP window closes
+      pipWindow.addEventListener('pagehide', () => {
+        document.body.appendChild(appContainer);
+        showToast("Returned from Floating Mode");
+      });
+
+      showToast("Floating Always-on-top Mode Active!");
+    } catch (err) {
+      console.error("Failed to enter Picture-in-Picture mode:", err);
+      showToast("Failed to open Floating Mode");
+    }
   }
 });
