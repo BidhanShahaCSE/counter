@@ -32,9 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
   pipVideo.playsInline = true;
   pipVideo.setAttribute('webkit-playsinline', 'true');
   pipVideo.style.position = 'fixed';
-  pipVideo.style.width = '1px';
-  pipVideo.style.height = '1px';
-  pipVideo.style.opacity = '0';
+  pipVideo.style.left = '-9999px';
+  pipVideo.style.top = '-9999px';
+  pipVideo.style.width = '320px';
+  pipVideo.style.height = '96px';
+  pipVideo.style.opacity = '0.01';
   pipVideo.style.pointerEvents = 'none';
   document.body.appendChild(pipVideo);
 
@@ -546,11 +548,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const stream = pipCanvas.captureStream(10); // 10 FPS is super light and battery friendly
         pipVideo.srcObject = stream;
         
-        // 2. Play the video stream and trigger browser Picture-in-Picture
-        await pipVideo.play();
+        // 2. iOS Safari compliance: wait for metadata to be fully loaded before requesting PiP
+        await new Promise((resolve) => {
+          pipVideo.onloadedmetadata = () => {
+            resolve();
+          };
+          if (pipVideo.readyState >= 1) {
+            resolve();
+          }
+          // Failsafe timeout of 350ms
+          setTimeout(resolve, 350);
+        });
+
+        // 3. Play the video stream and trigger browser Picture-in-Picture
+        try {
+          await pipVideo.play();
+        } catch (playErr) {
+          console.warn("Play interrupted or blocked, proceeding directly to PiP request:", playErr);
+        }
+        
         await pipVideo.requestPictureInPicture();
 
-        // 3. Mobile Intercept: Tapping floating overlay plays/pauses stream. We capture this to increment count!
+        // 4. Mobile Intercept: Tapping floating overlay plays/pauses stream. We capture this to increment count!
         let isProcessingTap = false;
         
         pipVideo.onplay = () => {
