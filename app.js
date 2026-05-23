@@ -21,6 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const installModalOverlay = document.getElementById('install-modal-overlay');
   const btnCloseModal = document.getElementById('btn-close-modal');
 
+  // Canvas and Video elements for Mobile PiP Live Stream
+  const pipCanvas = document.createElement('canvas');
+  pipCanvas.width = 320;
+  pipCanvas.height = 96;
+  const pipCtx = pipCanvas.getContext('2d');
+  
+  const pipVideo = document.createElement('video');
+  pipVideo.muted = true;
+  pipVideo.playsInline = true;
+  pipVideo.setAttribute('webkit-playsinline', 'true');
+
   // Application State
   let count = 0;
   let history = [];
@@ -74,24 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.add('android');
     }
 
-    // 7. Fallback PiP button to Fullscreen if Document PiP is unsupported (e.g. iPad, iPhone, Safari)
-    if (!('documentPictureInPicture' in window)) {
-      const btnText = btnPip.querySelector('.btn-text');
-      if (btnText) btnText.textContent = 'Fullscreen';
-      
-      const svgIcon = btnPip.querySelector('svg');
-      if (svgIcon) {
-        svgIcon.innerHTML = `
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-        `;
-      }
-    }
-
-    // 8. If already running in PWA standalone mode (installed on Home Screen), hide the PiP/Fullscreen button entirely
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    if (isStandalone) {
-      btnPip.style.display = 'none';
-    }
+    // 7. Render initial state to the Canvas PiP stream
+    drawPipCanvas();
 
     // 6. Register Event Listeners
     registerEventListeners();
@@ -101,6 +96,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateCounterDOM() {
     counterValue.textContent = count;
+  }
+
+  // --- Unified Counter Incrementer ---
+
+  function incrementCount() {
+    count++;
+    saveState();
+    updateCounterDOM();
+
+    // Trigger pop animation on counter text
+    if (counterValue) {
+      counterValue.classList.remove('pop');
+      void counterValue.offsetWidth; // Force reflow
+      counterValue.classList.add('pop');
+    }
+
+    // Redraw PiP canvas in real-time
+    drawPipCanvas();
+  }
+
+  // --- Dynamic Live PiP Canvas Renderer ---
+
+  function drawPipCanvas() {
+    // 1. Clear & Draw Rounded Rectangle Background
+    pipCtx.fillStyle = '#0a0a0f'; // Pitch black
+    pipCtx.fillRect(0, 0, pipCanvas.width, pipCanvas.height);
+    
+    // Draw thin gray border
+    pipCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    pipCtx.lineWidth = 2;
+    pipCtx.strokeRect(1, 1, pipCanvas.width - 2, pipCanvas.height - 2);
+
+    // 2. Draw close symbol '×' on the left
+    pipCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    pipCtx.font = '28px "Outfit", "Inter", sans-serif';
+    pipCtx.textAlign = 'center';
+    pipCtx.textBaseline = 'middle';
+    pipCtx.fillText('×', 40, pipCanvas.height / 2);
+
+    // 3. Draw Count Value in the center
+    pipCtx.fillStyle = '#ffffff';
+    pipCtx.font = 'bold 36px "Outfit", "Inter", sans-serif';
+    pipCtx.textAlign = 'center';
+    pipCtx.textBaseline = 'middle';
+    pipCtx.fillText(count.toString(), pipCanvas.width / 2, pipCanvas.height / 2);
+
+    // 4. Draw Plus button '+' on the right (White rounded box with black '+')
+    const boxSize = 42;
+    const boxX = pipCanvas.width - 40 - boxSize / 2;
+    const boxY = pipCanvas.height / 2 - boxSize / 2;
+    
+    // Draw white rounded box
+    pipCtx.fillStyle = '#ffffff';
+    pipCtx.beginPath();
+    const radius = 10;
+    pipCtx.moveTo(boxX + radius, boxY);
+    pipCtx.lineTo(boxX + boxSize - radius, boxY);
+    pipCtx.quadraticCurveTo(boxX + boxSize, boxY, boxX + boxSize, boxY + radius);
+    pipCtx.lineTo(boxX + boxSize, boxY + boxSize - radius);
+    pipCtx.quadraticCurveTo(boxX + boxSize, boxY + boxSize, boxX + boxSize - radius, boxY + boxSize);
+    pipCtx.lineTo(boxX + radius, boxY + boxSize);
+    pipCtx.quadraticCurveTo(boxX, boxY + boxSize, boxX, boxY + boxSize - radius);
+    pipCtx.lineTo(boxX, boxY + radius);
+    pipCtx.quadraticCurveTo(boxX, boxY, boxX + radius, boxY);
+    pipCtx.closePath();
+    pipCtx.fill();
+
+    // Plus text inside the box
+    pipCtx.fillStyle = '#0a0a0f';
+    pipCtx.font = 'bold 24px "Outfit", "Inter", sans-serif';
+    pipCtx.textAlign = 'center';
+    pipCtx.textBaseline = 'middle';
+    pipCtx.fillText('+', boxX + boxSize / 2, boxY + boxSize / 2);
   }
 
   function updateHistoryBadge() {
@@ -137,14 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isInteractive) return;
 
       // Increment count
-      count++;
-      saveState();
-      updateCounterDOM();
-
-      // Trigger pop animation on counter text
-      counterValue.classList.remove('pop');
-      void counterValue.offsetWidth; // Force DOM reflow to restart CSS animation
-      counterValue.classList.add('pop');
+      incrementCount();
 
 
     });
@@ -177,10 +238,10 @@ document.addEventListener('DOMContentLoaded', () => {
       clearAllHistory();
     });
 
-    // E. PiP / Fullscreen Action
+    // E. Always-on-top PiP Action (Desktop & Mobile)
     btnPip.addEventListener('click', (e) => {
       e.stopPropagation();
-      handlePipOrFullscreen();
+      togglePiP();
     });
 
     // F. Close PWA Install Modal
@@ -243,6 +304,9 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCounterDOM();
     updateHistoryBadge();
     renderHistory();
+    
+    // Update Canvas stream
+    drawPipCanvas();
 
     showToast(`Saved session with ${loggedCount} counts!`);
   }
@@ -371,109 +435,185 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Document Picture-in-Picture logic ---
 
   async function togglePiP() {
-    try {
-      // Check if there is already an active PiP window
-      if (window.documentPictureInPicture && window.documentPictureInPicture.window) {
-        window.documentPictureInPicture.window.close();
-        return;
-      }
-
-      // Open PiP window
-      const pipWindow = await window.documentPictureInPicture.requestWindow({
-        width: 380,
-        height: 600,
-      });
-
-      // Copy stylesheets
-      const allStylesheets = Array.from(document.styleSheets);
-      allStylesheets.forEach((stylesheet) => {
-        try {
-          const cssRules = Array.from(stylesheet.cssRules)
-            .map((rule) => rule.cssText)
-            .join('');
-          const style = document.createElement('style');
-          style.textContent = cssRules;
-          pipWindow.document.head.appendChild(style);
-        } catch (e) {
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = stylesheet.href;
-          pipWindow.document.head.appendChild(link);
-        }
-      });
-
-      // Copy Google Fonts preconnect tags
-      Array.from(document.querySelectorAll('link[rel="preconnect"]')).forEach((link) => {
-        pipWindow.document.head.appendChild(link.cloneNode(true));
-      });
-
-      // Move the app container to PiP
-      pipWindow.document.body.appendChild(appContainer);
-
-      // Hide PiP button inside the PiP window to prevent nested PiP calls
-      const pipButtonInPiP = pipWindow.document.getElementById('btn-pip');
-      if (pipButtonInPiP) {
-        pipButtonInPiP.style.display = 'none';
-      }
-
-      // Restore when PiP window closes
-      pipWindow.addEventListener('pagehide', () => {
-        document.body.appendChild(appContainer);
-        showToast("Returned from Floating Mode");
-      });
-
-      showToast("Floating Always-on-top Mode Active!");
-    } catch (err) {
-      console.error("Failed to enter Picture-in-Picture mode:", err);
-      showToast("Failed to open Floating Mode");
-    }
-  }
-
-  // --- Route PiP or Fullscreen based on browser support ---
-
-  function handlePipOrFullscreen() {
+    // A. Desktop Document PiP Mode
     if ('documentPictureInPicture' in window) {
-      togglePiP();
-    } else {
-      toggleFullscreen();
-    }
-  }
-
-  // --- HTML5 Fullscreen API toggle with PWA Installer Fallback ---
-
-  async function toggleFullscreen() {
-    try {
-      const docEl = document.documentElement;
-      const isFullscreen = document.fullscreenElement || 
-                           document.webkitFullscreenElement || 
-                           document.mozFullScreenElement || 
-                           document.msFullscreenElement;
-
-      if (!isFullscreen) {
-        // Enter Fullscreen with multi-browser checks
-        if (docEl.requestFullscreen) {
-          await docEl.requestFullscreen();
-        } else if (docEl.webkitRequestFullscreen) { /* iPadOS & iOS Safari */
-          await docEl.webkitRequestFullscreen();
-        } else if (docEl.msRequestFullscreen) {
-          await docEl.msRequestFullscreen();
-        } else {
-          // Robust PWA instructions popup modal if native fullscreen is unsupported (iPhone)
-          openInstallModal();
+      try {
+        if (window.documentPictureInPicture.window) {
+          window.documentPictureInPicture.window.close();
+          return;
         }
-      } else {
-        // Exit Fullscreen with multi-browser checks
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          await document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-          await document.msExitFullscreen();
-        }
+
+        const pipWindow = await window.documentPictureInPicture.requestWindow({
+          width: 340,
+          height: 120,
+        });
+
+        // Copy stylesheets
+        const allStylesheets = Array.from(document.styleSheets);
+        allStylesheets.forEach((stylesheet) => {
+          try {
+            const cssRules = Array.from(stylesheet.cssRules).map(r => r.cssText).join('');
+            const style = document.createElement('style');
+            style.textContent = cssRules;
+            pipWindow.document.head.appendChild(style);
+          } catch (e) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = stylesheet.href;
+            pipWindow.document.head.appendChild(link);
+          }
+        });
+
+        // Copy fonts preconnect tags
+        Array.from(document.querySelectorAll('link[rel="preconnect"]')).forEach((link) => {
+          pipWindow.document.head.appendChild(link.cloneNode(true));
+        });
+
+        // Create a custom desktop widget layout matching their screenshot
+        const widgetContainer = pipWindow.document.createElement('div');
+        widgetContainer.className = 'pip-widget-container';
+        widgetContainer.innerHTML = `
+          <button class="pip-close-btn">&times;</button>
+          <div class="pip-value">${count}</div>
+          <button class="pip-plus-btn">+</button>
+        `;
+
+        pipWindow.document.body.appendChild(widgetContainer);
+
+        // Inject widget stylesheet specifically for desktop Document PiP
+        const widgetStyle = pipWindow.document.createElement('style');
+        widgetStyle.textContent = `
+          body {
+            margin: 0;
+            background-color: #050508;
+            color: #ffffff;
+            font-family: 'Outfit', 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+          }
+          .pip-widget-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 32px;
+            box-sizing: border-box;
+            background: #0a0a0f;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+          }
+          .pip-close-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 28px;
+            cursor: pointer;
+            padding: 8px;
+            transition: all 0.2s;
+          }
+          .pip-close-btn:hover {
+            color: #ffffff;
+          }
+          .pip-value {
+            font-size: 38px;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+          }
+          .pip-plus-btn {
+            background: #ffffff;
+            border: none;
+            color: #0a0a0f;
+            font-size: 24px;
+            font-weight: 700;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+          }
+          .pip-plus-btn:active {
+            transform: scale(0.95);
+          }
+        `;
+        pipWindow.document.head.appendChild(widgetStyle);
+
+        // Click listeners inside Document PiP window
+        const closeBtn = widgetContainer.querySelector('.pip-close-btn');
+        const plusBtn = widgetContainer.querySelector('.pip-plus-btn');
+        const pipVal = widgetContainer.querySelector('.pip-value');
+
+        closeBtn.addEventListener('click', () => {
+          pipWindow.close();
+        });
+
+        plusBtn.addEventListener('click', () => {
+          incrementCount();
+          pipVal.textContent = count;
+        });
+
+        // Sync count changes from main window to PiP window
+        const interval = setInterval(() => {
+          if (pipVal) pipVal.textContent = count;
+        }, 100);
+
+        pipWindow.addEventListener('pagehide', () => {
+          clearInterval(interval);
+          showToast("Floating Mode Closed");
+        });
+
+        showToast("Desktop Always-on-top Widget Active!");
+      } catch (err) {
+        console.error("Document PiP failed:", err);
+        showToast("Failed to launch floating widget");
       }
-    } catch (err) {
-      console.warn("Fullscreen request rejected, launching PWA Installation guide instead:", err);
-      openInstallModal();
+    }
+    // B. Mobile Video-Canvas Stream Fallback (iPad / Android / iPhone)
+    else {
+      try {
+        // Redraw canvas with latest count
+        drawPipCanvas();
+
+        // Capture canvas stream
+        const stream = pipCanvas.captureStream(10); // 10 FPS
+        pipVideo.srcObject = stream;
+        
+        await pipVideo.play();
+        await pipVideo.requestPictureInPicture();
+
+        // Listen for taps inside floating PiP on mobile to increment!
+        let isProcessingTap = false;
+        
+        // Remove old listeners to avoid stacking
+        pipVideo.onplay = () => {
+          if (isProcessingTap) return;
+          isProcessingTap = true;
+          incrementCount();
+          setTimeout(() => { isProcessingTap = false; }, 250);
+        };
+        pipVideo.onpause = () => {
+          if (isProcessingTap) return;
+          isProcessingTap = true;
+          incrementCount();
+          // Force resume playing to keep the widget live visually
+          pipVideo.play().catch(e => console.log(e));
+          setTimeout(() => { isProcessingTap = false; }, 250);
+        };
+
+        showToast("Mobile Floating Counter Active!");
+      } catch (err) {
+        console.error("Canvas Video PiP failed:", err);
+        // Fallback to custom PWA install guide modal
+        openInstallModal();
+      }
     }
   }
 
