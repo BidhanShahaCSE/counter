@@ -21,12 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const installModalOverlay = document.getElementById('install-modal-overlay');
   const btnCloseModal = document.getElementById('btn-close-modal');
 
-  // Canvas and Video elements for Mobile PiP Live Stream
+  // PiP Canvas & Video elements (Appended to DOM for Safari compliance)
   const pipCanvas = document.createElement('canvas');
   pipCanvas.width = 320;
   pipCanvas.height = 96;
   const pipCtx = pipCanvas.getContext('2d');
-  
+
   const pipVideo = document.createElement('video');
   pipVideo.muted = true;
   pipVideo.playsInline = true;
@@ -64,24 +64,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 3. Render initial state to the DOM
+    // 3. Render initial state to DOM & Canvas PiP
     updateCounterDOM();
     renderHistory();
     updateHistoryBadge();
+    drawPipCanvas();
 
-    // 4. Welcome back toast if there was a running session
-    if (count > 0) {
-      showToast(`Resumed session at ${count}`);
-    }
-
-    // 5. Register PWA Service Worker for standalone App Mode capability
+    // 4. Register PWA Service Worker for standalone offline usage
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('PWA Service Worker Registered'))
-        .catch(err => console.log('PWA Service Worker Registration Failed', err));
+        .then(() => console.log('Service Worker Registered'))
+        .catch(err => console.log('Service Worker Failed', err));
     }
 
-    // 6. Detect client OS for Custom Installation Guide
+    // 5. Detect client OS for Installation Modal Guides
     const ua = navigator.userAgent.toLowerCase();
     const isiOS = /ipad|iphone|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isAndroid = /android/.test(ua);
@@ -91,10 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.add('android');
     }
 
-    // 7. Render initial state to the Canvas PiP stream
-    drawPipCanvas();
+    // 6. Welcome toast if resuming session
+    if (count > 0) {
+      showToast(`Resumed session at ${count}`);
+    }
 
-    // 6. Register Event Listeners
+    // 7. Register Event Listeners
     registerEventListeners();
   }
 
@@ -111,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveState();
     updateCounterDOM();
 
-    // Trigger pop animation on counter text
+    // Trigger pop scaling animation on counter text
     if (counterValue) {
       counterValue.classList.remove('pop');
       void counterValue.offsetWidth; // Force reflow
@@ -122,14 +120,14 @@ document.addEventListener('DOMContentLoaded', () => {
     drawPipCanvas();
   }
 
-  // --- Dynamic Live PiP Canvas Renderer ---
+  // --- Live Dynamic PiP Canvas Renderer ---
 
   function drawPipCanvas() {
-    // 1. Clear & Draw Rounded Rectangle Background
-    pipCtx.fillStyle = '#0a0a0f'; // Pitch black
+    // 1. Draw rounded container (Pitch black background)
+    pipCtx.fillStyle = '#0a0a0f';
     pipCtx.fillRect(0, 0, pipCanvas.width, pipCanvas.height);
     
-    // Draw thin gray border
+    // Draw thin gray border outline
     pipCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
     pipCtx.lineWidth = 2;
     pipCtx.strokeRect(1, 1, pipCanvas.width - 2, pipCanvas.height - 2);
@@ -153,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const boxX = pipCanvas.width - 40 - boxSize / 2;
     const boxY = pipCanvas.height / 2 - boxSize / 2;
     
-    // Draw white rounded box
+    // Draw rounded rect helper
     pipCtx.fillStyle = '#ffffff';
     pipCtx.beginPath();
     const radius = 10;
@@ -196,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function registerEventListeners() {
     // A. Main Touch/Click Anywhere to Increment
     appContainer.addEventListener('pointerdown', (e) => {
-      // Ignore click if it targets interactive UI panels or buttons
+      // Ignore click if it targets interactive UI elements
       const isInteractive = e.target.closest('#btn-reset') ||
                             e.target.closest('#btn-history') ||
                             e.target.closest('#btn-pip') ||
@@ -212,13 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Increment count
       incrementCount();
-
-
     });
 
     // B. Reset and Archive Session
     btnReset.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent counting on click
+      e.stopPropagation();
       archiveCurrentSession();
     });
 
@@ -244,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clearAllHistory();
     });
 
-    // E. Always-on-top PiP Action (Desktop & Mobile)
+    // E. Always-on-top Floating PiP Action
     btnPip.addEventListener('click', (e) => {
       e.stopPropagation();
       togglePiP();
@@ -261,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
       closeInstallModal();
     });
 
-    // E. STRICTLY Prevent Context Menu (and long-press select/zoom behaviors)
+    // G. STRICTLY Prevent Context Menu (and long-press select/zoom behaviors)
     window.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       return false;
@@ -275,8 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: false });
   }
 
-
-
   // --- Session Archive (Reset Logic) ---
 
   function archiveCurrentSession() {
@@ -285,8 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Format current date and time beautifully
-    // e.g. "22 May 2026, 02:45 AM"
     const now = new Date();
     const formattedDate = formatTimestamp(now);
 
@@ -296,22 +288,15 @@ document.addEventListener('DOMContentLoaded', () => {
       timestamp: formattedDate
     };
 
-    // Add to the front of the array (newest first)
     history.unshift(sessionLog);
-    
-    // Save previous count
     const loggedCount = count;
     
-    // Reset state
     count = 0;
     saveState();
     
-    // Update DOM
     updateCounterDOM();
     updateHistoryBadge();
     renderHistory();
-    
-    // Update Canvas stream
     drawPipCanvas();
 
     showToast(`Saved session with ${loggedCount} counts!`);
@@ -320,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper to format date cleanly
   function formatTimestamp(date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
     const day = date.getDate().toString().padStart(2, '0');
     const month = months[date.getMonth()];
     const year = date.getFullYear();
@@ -330,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const ampm = hours >= 12 ? 'PM' : 'AM';
     
     hours = hours % 12;
-    hours = hours ? hours : 12; // The hour '0' should be '12'
+    hours = hours ? hours : 12;
     const strHours = hours.toString().padStart(2, '0');
 
     return `${day} ${month} ${year}, ${strHours}:${minutes} ${ampm}`;
@@ -341,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function openDrawer() {
     historyDrawer.classList.add('active');
     drawerOverlay.classList.add('active');
-    renderHistory(); // Refresh view
+    renderHistory();
   }
 
   function closeDrawer() {
@@ -350,7 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderHistory() {
-    // Clear list
     historyList.innerHTML = '';
 
     if (history.length === 0) {
@@ -383,7 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </button>
       `;
 
-      // Event listener for delete button
       const deleteBtn = li.querySelector('.delete-item-btn');
       deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -412,36 +394,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- Toast System ---
-
-  function showToast(message) {
-    const toast = document.createElement('div');
-    toast.classList.add('toast');
-    
-    toast.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span>${message}</span>
-    `;
-
-    toastContainer.appendChild(toast);
-
-    // Fade out phase
-    setTimeout(() => {
-      toast.classList.add('fade-out');
-    }, 2200);
-
-    // Destruction phase
-    setTimeout(() => {
-      toast.remove();
-    }, 2500);
-  }
-
-  // --- Document Picture-in-Picture logic ---
+  // --- Picture-in-Picture (PiP) Implementation ---
 
   async function togglePiP() {
-    // A. Desktop Document PiP Mode
+    // A. Desktop Document PiP Mode (Allows fully resizable custom interactive HTML widgets)
     if ('documentPictureInPicture' in window) {
       try {
         if (window.documentPictureInPicture.window) {
@@ -450,11 +406,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const pipWindow = await window.documentPictureInPicture.requestWindow({
-          width: 340,
-          height: 120,
+          width: 320,
+          height: 96,
         });
 
-        // Copy stylesheets
+        // Copy styles
         const allStylesheets = Array.from(document.styleSheets);
         allStylesheets.forEach((stylesheet) => {
           try {
@@ -475,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
           pipWindow.document.head.appendChild(link.cloneNode(true));
         });
 
-        // Create a custom desktop widget layout matching their screenshot
+        // Inject widget layout matching the phone screenshot exactly!
         const widgetContainer = pipWindow.document.createElement('div');
         widgetContainer.className = 'pip-widget-container';
         widgetContainer.innerHTML = `
@@ -483,10 +439,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="pip-value">${count}</div>
           <button class="pip-plus-btn">+</button>
         `;
-
         pipWindow.document.body.appendChild(widgetContainer);
 
-        // Inject widget stylesheet specifically for desktop Document PiP
         const widgetStyle = pipWindow.document.createElement('style');
         widgetStyle.textContent = `
           body {
@@ -508,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 32px;
+            padding: 0 28px;
             box-sizing: border-box;
             background: #0a0a0f;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -527,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             color: #ffffff;
           }
           .pip-value {
-            font-size: 38px;
+            font-size: 34px;
             font-weight: 700;
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
           }
@@ -537,8 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
             color: #0a0a0f;
             font-size: 24px;
             font-weight: 700;
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
             border-radius: 10px;
             cursor: pointer;
             display: flex;
@@ -552,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         pipWindow.document.head.appendChild(widgetStyle);
 
-        // Click listeners inside Document PiP window
+        // Click listeners in Desktop PiP window
         const closeBtn = widgetContainer.querySelector('.pip-close-btn');
         const plusBtn = widgetContainer.querySelector('.pip-plus-btn');
         const pipVal = widgetContainer.querySelector('.pip-value');
@@ -566,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
           pipVal.textContent = count;
         });
 
-        // Sync count changes from main window to PiP window
+        // Sync count transitions from main browser
         const interval = setInterval(() => {
           if (pipVal) pipVal.textContent = count;
         }, 100);
@@ -582,34 +536,35 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("Failed to launch floating widget");
       }
     }
-    // B. Mobile Video-Canvas Stream Fallback (iPad / Android / iPhone)
+    // B. Mobile Video-Canvas Stream PiP (Failsafe dynamic Canvas Stream fallback)
     else {
       try {
-        // Redraw canvas with latest count
+        // Redraw canvas with latest count before capture
         drawPipCanvas();
 
-        // Capture canvas stream
-        const stream = pipCanvas.captureStream(10); // 10 FPS
+        // 1. Capture stream from canvas
+        const stream = pipCanvas.captureStream(10); // 10 FPS is super light and battery friendly
         pipVideo.srcObject = stream;
         
+        // 2. Play the video stream and trigger browser Picture-in-Picture
         await pipVideo.play();
         await pipVideo.requestPictureInPicture();
 
-        // Listen for taps inside floating PiP on mobile to increment!
+        // 3. Mobile Intercept: Tapping floating overlay plays/pauses stream. We capture this to increment count!
         let isProcessingTap = false;
         
-        // Remove old listeners to avoid stacking
         pipVideo.onplay = () => {
           if (isProcessingTap) return;
           isProcessingTap = true;
           incrementCount();
           setTimeout(() => { isProcessingTap = false; }, 250);
         };
+        
         pipVideo.onpause = () => {
           if (isProcessingTap) return;
           isProcessingTap = true;
           incrementCount();
-          // Force resume playing to keep the widget live visually
+          // Keep stream playing visually so it remains active
           pipVideo.play().catch(e => console.log(e));
           setTimeout(() => { isProcessingTap = false; }, 250);
         };
@@ -617,13 +572,13 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("Mobile Floating Counter Active!");
       } catch (err) {
         console.error("Canvas Video PiP failed:", err);
-        // Fallback to custom PWA install guide modal
+        // Fallback: Launch beautiful custom PWA Install Guide Modal
         openInstallModal();
       }
     }
   }
 
-  // --- PWA Custom Installation Guide Modal Actions ---
+  // --- PWA Installation Modal Actions ---
 
   function openInstallModal() {
     installModal.classList.add('active');
@@ -633,5 +588,28 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeInstallModal() {
     installModal.classList.remove('active');
     installModalOverlay.classList.remove('active');
+  }
+
+  // --- Toast Notifications ---
+
+  function showToast(message) {
+    const toast = document.createElement('div');
+    toast.classList.add('toast');
+    toast.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>${message}</span>
+    `;
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('fade-out');
+    }, 2200);
+
+    setTimeout(() => {
+      toast.remove();
+    }, 2500);
   }
 });
