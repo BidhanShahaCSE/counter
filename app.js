@@ -87,6 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // 8. If already running in PWA standalone mode (installed on Home Screen), hide the PiP/Fullscreen button entirely
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (isStandalone) {
+      btnPip.style.display = 'none';
+    }
+
     // 6. Register Event Listeners
     registerEventListeners();
   }
