@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const noHistoryMsg = document.getElementById('no-history-msg');
   const btnClearHistory = document.getElementById('btn-clear-history');
   const toastContainer = document.getElementById('toast-container');
+  const activeNote = document.getElementById('active-note');
 
 
   // PiP Canvas & Video elements (Appended to DOM for Safari compliance)
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Application State
   let count = 0;
   let history = [];
+  let activeCountNote = '';
 
   // Initialize App
   init();
@@ -65,6 +67,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 3. Render initial state to DOM & Canvas PiP
+    const savedNote = localStorage.getItem('activeCountNote');
+    if (savedNote !== null) {
+      activeCountNote = savedNote;
+    }
+    if (activeNote) {
+      activeNote.value = activeCountNote;
+      setTimeout(() => autoGrowTextarea(activeNote), 0);
+    }
+
     updateCounterDOM();
     renderHistory();
     updateHistoryBadge();
@@ -187,6 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveState() {
     localStorage.setItem('activeCount', count);
     localStorage.setItem('counterHistory', JSON.stringify(history));
+    localStorage.setItem('activeCountNote', activeCountNote);
   }
 
   // --- Event Handling ---
@@ -202,7 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             e.target.closest('.toast-container') ||
                             e.target.closest('#drawer-overlay') ||
                             e.target.closest('.close-btn') ||
-                            e.target.closest('.delete-item-btn');
+                            e.target.closest('.delete-item-btn') ||
+                            e.target.closest('.active-note-container');
 
       if (isInteractive) return;
 
@@ -244,6 +257,18 @@ document.addEventListener('DOMContentLoaded', () => {
       togglePiP();
     });
 
+    // F. Active Note Textarea Event Handling
+    if (activeNote) {
+      activeNote.addEventListener('input', () => {
+        activeCountNote = activeNote.value;
+        saveState();
+        autoGrowTextarea(activeNote);
+      });
+      window.addEventListener('resize', () => {
+        autoGrowTextarea(activeNote);
+      });
+    }
+
 
 
     // G. STRICTLY Prevent Context Menu (and long-press select/zoom behaviors)
@@ -274,13 +299,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionLog = {
       id: Date.now().toString(),
       count: count,
-      timestamp: formattedDate
+      timestamp: formattedDate,
+      note: activeCountNote
     };
 
     history.unshift(sessionLog);
     const loggedCount = count;
     
     count = 0;
+    activeCountNote = '';
+    if (activeNote) {
+      activeNote.value = '';
+      autoGrowTextarea(activeNote);
+    }
     saveState();
     
     updateCounterDOM();
@@ -339,13 +370,18 @@ document.addEventListener('DOMContentLoaded', () => {
       li.classList.add('history-item');
 
       li.innerHTML = `
-        <div class="history-item-details">
-          <div class="history-item-count">${item.count}</div>
-          <div class="history-item-time">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>${item.timestamp}</span>
+        <div class="history-item-main">
+          <div class="history-item-details">
+            <div class="history-item-count">${item.count}</div>
+            <div class="history-item-time">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>${item.timestamp}</span>
+            </div>
+          </div>
+          <div class="history-item-note-container">
+            <textarea class="history-item-note" placeholder="Add a note..." rows="1">${item.note || ''}</textarea>
           </div>
         </div>
         <button class="delete-item-btn" aria-label="Delete this session">
@@ -354,6 +390,22 @@ document.addEventListener('DOMContentLoaded', () => {
           </svg>
         </button>
       `;
+
+      const noteTextarea = li.querySelector('.history-item-note');
+      if (noteTextarea) {
+        autoGrowTextarea(noteTextarea);
+        setTimeout(() => autoGrowTextarea(noteTextarea), 50);
+
+        noteTextarea.addEventListener('input', () => {
+          item.note = noteTextarea.value;
+          saveState();
+          autoGrowTextarea(noteTextarea);
+        });
+
+        noteTextarea.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+        });
+      }
 
       const deleteBtn = li.querySelector('.delete-item-btn');
       deleteBtn.addEventListener('click', (e) => {
@@ -604,5 +656,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       toast.remove();
     }, 2500);
+  }
+
+  // --- Auto-growing Textarea Helper ---
+  function autoGrowTextarea(textarea) {
+    if (!textarea) return;
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
   }
 });
