@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
   pipVideo.muted = true;
   pipVideo.playsInline = true;
   pipVideo.setAttribute('webkit-playsinline', 'true');
+  pipVideo.style.position = 'fixed';
+  pipVideo.style.width = '1px';
+  pipVideo.style.height = '1px';
+  pipVideo.style.opacity = '0';
+  pipVideo.style.pointerEvents = 'none';
+  document.body.appendChild(pipVideo);
 
   // Application State
   let count = 0;
