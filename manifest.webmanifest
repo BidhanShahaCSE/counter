@@ -1,0 +1,16 @@
+{
+  "name": "Minimalist Tap Counter",
+  "short_name": "Counter",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050508",
+  "theme_color": "#050508",
+  "description": "A premium minimalist tap counter. Tap anywhere, track your session history, and never lose progress.",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

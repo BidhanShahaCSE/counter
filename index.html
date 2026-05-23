@@ -10,6 +10,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@200;300;400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <!-- PWA Apple Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Counter">
+  <link rel="apple-touch-icon" href="icon.png">
 </head>
 <body>
 
@@ -52,7 +58,6 @@
     <main class="counter-main">
       <div class="counter-wrapper">
         <div id="counter-value" class="counter-value">0</div>
-        <div class="counter-label">TAP ANYWHERE TO COUNT</div>
       </div>
     </main>
 
@@ -98,6 +103,44 @@
         </button>
       </div>
     </aside>
+
+    <!-- Beautiful glassmorphic instruction modal for PWA / iOS -->
+    <div id="install-modal-overlay" class="modal-overlay"></div>
+    <div id="install-modal" class="install-modal" aria-label="Installation Guide">
+      <div class="modal-header">
+        <div class="modal-title-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          <h3>Install Web App</h3>
+        </div>
+        <button id="btn-close-modal" class="close-btn" aria-label="Close modal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Add this counter to your Home Screen to open it as a standalone full-screen application without browser tabs!</p>
+        
+        <div class="instruction-group ios-only">
+          <h4>For iPad / iPhone (Safari)</h4>
+          <ol>
+            <li>Tap the **Share** button <svg class="inline-svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> in the browser bar.</li>
+            <li>Scroll down and tap **"Add to Home Screen"** <svg class="inline-svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>.</li>
+            <li>Tap **"Add"** in the top-right corner to finish installation.</li>
+          </ol>
+        </div>
+
+        <div class="instruction-group android-only">
+          <h4>For Android (Chrome)</h4>
+          <ol>
+            <li>Tap the **Menu** button (three dots) in Chrome.</li>
+            <li>Tap **"Install app"** or **"Add to Home screen"**.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
 
   </div>
 

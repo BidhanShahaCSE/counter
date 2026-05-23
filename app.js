@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const noHistoryMsg = document.getElementById('no-history-msg');
   const btnClearHistory = document.getElementById('btn-clear-history');
   const toastContainer = document.getElementById('toast-container');
+  const installModal = document.getElementById('install-modal');
+  const installModalOverlay = document.getElementById('install-modal-overlay');
+  const btnCloseModal = document.getElementById('btn-close-modal');
 
   // Application State
   let count = 0;
@@ -54,9 +57,34 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(`Resumed session at ${count}`);
     }
 
-    // 5. Hide PiP button if not supported in the browser
+    // 5. Register PWA Service Worker for standalone App Mode capability
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('PWA Service Worker Registered'))
+        .catch(err => console.log('PWA Service Worker Registration Failed', err));
+    }
+
+    // 6. Detect client OS for Custom Installation Guide
+    const ua = navigator.userAgent.toLowerCase();
+    const isiOS = /ipad|iphone|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /android/.test(ua);
+    if (isiOS) {
+      document.body.classList.add('ios');
+    } else if (isAndroid) {
+      document.body.classList.add('android');
+    }
+
+    // 7. Fallback PiP button to Fullscreen if Document PiP is unsupported (e.g. iPad, iPhone, Safari)
     if (!('documentPictureInPicture' in window)) {
-      btnPip.style.display = 'none';
+      const btnText = btnPip.querySelector('.btn-text');
+      if (btnText) btnText.textContent = 'Fullscreen';
+      
+      const svgIcon = btnPip.querySelector('svg');
+      if (svgIcon) {
+        svgIcon.innerHTML = `
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+        `;
+      }
     }
 
     // 6. Register Event Listeners
@@ -93,6 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             e.target.closest('#btn-history') ||
                             e.target.closest('#btn-pip') ||
                             e.target.closest('#history-drawer') ||
+                            e.target.closest('#install-modal') ||
+                            e.target.closest('#install-modal-overlay') ||
                             e.target.closest('.toast-container') ||
                             e.target.closest('#drawer-overlay') ||
                             e.target.closest('.close-btn') ||
@@ -141,10 +171,21 @@ document.addEventListener('DOMContentLoaded', () => {
       clearAllHistory();
     });
 
-    // E. PiP Mode Action
+    // E. PiP / Fullscreen Action
     btnPip.addEventListener('click', (e) => {
       e.stopPropagation();
-      togglePiP();
+      handlePipOrFullscreen();
+    });
+
+    // F. Close PWA Install Modal
+    btnCloseModal.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeInstallModal();
+    });
+
+    installModalOverlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeInstallModal();
     });
 
     // E. STRICTLY Prevent Context Menu (and long-press select/zoom behaviors)
@@ -380,5 +421,65 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error("Failed to enter Picture-in-Picture mode:", err);
       showToast("Failed to open Floating Mode");
     }
+  }
+
+  // --- Route PiP or Fullscreen based on browser support ---
+
+  function handlePipOrFullscreen() {
+    if ('documentPictureInPicture' in window) {
+      togglePiP();
+    } else {
+      toggleFullscreen();
+    }
+  }
+
+  // --- HTML5 Fullscreen API toggle with PWA Installer Fallback ---
+
+  async function toggleFullscreen() {
+    try {
+      const docEl = document.documentElement;
+      const isFullscreen = document.fullscreenElement || 
+                           document.webkitFullscreenElement || 
+                           document.mozFullScreenElement || 
+                           document.msFullscreenElement;
+
+      if (!isFullscreen) {
+        // Enter Fullscreen with multi-browser checks
+        if (docEl.requestFullscreen) {
+          await docEl.requestFullscreen();
+        } else if (docEl.webkitRequestFullscreen) { /* iPadOS & iOS Safari */
+          await docEl.webkitRequestFullscreen();
+        } else if (docEl.msRequestFullscreen) {
+          await docEl.msRequestFullscreen();
+        } else {
+          // Robust PWA instructions popup modal if native fullscreen is unsupported (iPhone)
+          openInstallModal();
+        }
+      } else {
+        // Exit Fullscreen with multi-browser checks
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          await document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          await document.msExitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen request rejected, launching PWA Installation guide instead:", err);
+      openInstallModal();
+    }
+  }
+
+  // --- PWA Custom Installation Guide Modal Actions ---
+
+  function openInstallModal() {
+    installModal.classList.add('active');
+    installModalOverlay.classList.add('active');
+  }
+
+  function closeInstallModal() {
+    installModal.classList.remove('active');
+    installModalOverlay.classList.remove('active');
   }
 });
