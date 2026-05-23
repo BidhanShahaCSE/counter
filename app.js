@@ -17,12 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const noHistoryMsg = document.getElementById('no-history-msg');
   const btnClearHistory = document.getElementById('btn-clear-history');
   const toastContainer = document.getElementById('toast-container');
-  const installModal = document.getElementById('install-modal');
-  const installModalOverlay = document.getElementById('install-modal-overlay');
-  const btnCloseModal = document.getElementById('btn-close-modal');
-  const slideoverModal = document.getElementById('slideover-modal');
-  const slideoverModalOverlay = document.getElementById('slideover-modal-overlay');
-  const btnCloseSlideover = document.getElementById('btn-close-slideover');
+
 
   // PiP Canvas & Video elements (Appended to DOM for Safari compliance)
   const pipCanvas = document.createElement('canvas');
@@ -204,10 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             e.target.closest('#btn-history') ||
                             e.target.closest('#btn-pip') ||
                             e.target.closest('#history-drawer') ||
-                            e.target.closest('#install-modal') ||
-                            e.target.closest('#install-modal-overlay') ||
-                            e.target.closest('#slideover-modal') ||
-                            e.target.closest('#slideover-modal-overlay') ||
                             e.target.closest('.toast-container') ||
                             e.target.closest('#drawer-overlay') ||
                             e.target.closest('.close-btn') ||
@@ -253,27 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
       togglePiP();
     });
 
-    // F. Close PWA Install Modal
-    btnCloseModal.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeInstallModal();
-    });
 
-    installModalOverlay.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeInstallModal();
-    });
-
-    // G. Close iPad Slide Over Modal
-    btnCloseSlideover.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeSlideOverModal();
-    });
-
-    slideoverModalOverlay.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeSlideOverModal();
-    });
 
     // G. STRICTLY Prevent Context Menu (and long-press select/zoom behaviors)
     window.addEventListener('contextmenu', (e) => {
@@ -607,44 +578,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast("Mobile Floating Counter Active!");
       } catch (err) {
         console.error("Canvas Video PiP failed:", err);
-        
-        // Failsafe OS sniffing: If Apple Safari on iPhone/iPad blocks dynamic streams,
-        // trigger the custom iPad Slide Over Floating widget instructions instead!
-        const ua = navigator.userAgent.toLowerCase();
-        const isiOS = /ipad|iphone|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
-        if (isiOS) {
-          openSlideOverModal();
-        } else {
-          // Fallback on Android / other environments: PWA installation dialog
-          openInstallModal();
-        }
+        showToast("Floating Mode not supported on this browser");
       }
     }
-  }
-
-  // --- PWA Installation Modal Actions ---
-
-  function openInstallModal() {
-    installModal.classList.add('active');
-    installModalOverlay.classList.add('active');
-  }
-
-  function closeInstallModal() {
-    installModal.classList.remove('active');
-    installModalOverlay.classList.remove('active');
-  }
-
-  // --- iPad Slide Over Floating Guide Modal Actions ---
-
-  function openSlideOverModal() {
-    slideoverModal.classList.add('active');
-    slideoverModalOverlay.classList.add('active');
-  }
-
-  function closeSlideOverModal() {
-    slideoverModal.classList.remove('active');
-    slideoverModalOverlay.classList.remove('active');
   }
 
   // --- Toast Notifications ---
